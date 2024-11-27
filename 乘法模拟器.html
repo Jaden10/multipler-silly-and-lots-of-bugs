@@ -272,13 +272,13 @@
               modalCombosText.innerHTML = `Combos : ${combos}`;
 
               //btnReview事件
-
+              btnReview.addEventListener("click", reviewListener);
             }
 
             time--;
           };
 
-          let time = 5;
+          let time = 120;
 
           // Call the timer every second
           tick();
