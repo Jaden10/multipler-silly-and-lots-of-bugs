@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Let's do some multiplication!!</title>
+    <style>
+      body {
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        position: relative;
+        justify-content: flex-start;
+        flex-direction: column;
+        background: linear-gradient(to top left, #28b487, #7dd56f);
+      }
+      #expression {
+        font-family: sans-serif;
+        font-size: 90px;
+        width: 100%;
+        margin-top: 70px;
+        margin-bottom: 90px;
+        text-align: center;
+        color: white;
+      }
+      #btn-test {
+        font-size: 2rem;
+        font-weight: 600;
+        padding: 1.25rem 3rem;
+        margin: 2rem 2rem;
+        border: none;
+        background-color: #fff;
+        color: #444;
+        border-radius: 10rem;
+        cursor: pointer;
+      }
+      #btn-review {
+        font-size: 25px;
+        font-weight: 600;
+        padding: 1rem 2rem;
+        margin: 1.5rem 6rem;
+        background-color: #7dd56f;
+        color: #444;
+        border-radius: 10rem;
+        cursor: pointer;
+      }
+      #btn-modalClose {
+        position: absolute; /* 绝对定位 */
+        top: 5px;
+        right: 15px;
+        font-size: 50px;
+        color: #888;
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+      .btnBelow {
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border: none;
+        background-color: #fff;
+        color: #444;
+        border-radius: 1rem;
+        cursor: pointer;
+      }
+      .test-items {
+        display: flex;
+        font-size: 2rem;
+        font-weight: 600;
+        border: none;
+        margin-top: 50px;
+        margin-bottom: 50px;
+        color: #ffffff;
+        flex-direction: row;
+        gap: 250px;
+      }
+      .modal {
+        top: 44%;
+        left: 50%;
+        transform: translate(-50%, -50%); /* 精确居中 */
+        width: 350px;
+        height: 400px;
+        padding: 20px;
+        background-color: white;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        text-align: center;
+        position: fixed;
+        justify-content: space-between;
+        display: flex;
+        flex-direction: column;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="test-items">
+      <div id="combos"></div>
+      <button class="btnBelow" id="btn-quit">Quit</button>
+      <div id="timer"></div>
+    </div>
+    <button id="btn-test">Timed Test</button>
+    <h1 id="expression"></h1>
+
+    <div class="btnBelowAll">
+      <button class="btnBelow" id="btn-correct">✅Correct</button>
+      <button class="btnBelow" id="btn-next">Next</button>
+      <button class="btnBelow" id="btn-wrong">❌Wrong</button>
+    </div>
+
+    <div class="modal hidden" id="modal-timesUp">
+      <button id="btn-modalClose">×</button>
+      <h1 id="timesUpText">Times Up!!!</h1>
+      <h2 id="modal-combosText"></h2>
+      <button class="btnBelow" id="btn-review">Review</button>
+    </div>
+
+    <script>
+      const h1 = document.getElementById("expression");
+      const btnNext = document.querySelector("#btn-next");
+      const btnTest = document.querySelector("#btn-test");
+      const btnCorrect = document.querySelector("#btn-correct");
+      const btnWrong = document.querySelector("#btn-wrong");
+      const btnQuit = document.querySelector("#btn-quit");
+      const btnReview = document.querySelector("#btn-review");
+      const btnModalClose = document.querySelector("#btn-modalClose");
+      const combosText = document.querySelector("#combos");
+      const timerText = document.querySelector("#timer");
+      const timesUpText = document.querySelector("#timesUpText");
+      const modal = document.querySelector("#modal-timesUp");
+      const modalCombosText = document.querySelector("#modal-combosText");
+
+      let misCollector = [];
+      let combos = 0;
+      let timer;
+      let correctListener, wrongListener;
+      let reviewListener, reviewCorrectListener, reviewWrongListener;
+
+      //生成随机乘法的函数
+      const generator = function () {
+        const number1 = Math.trunc(Math.random() * 8 + 2);
+        const number2 = Math.trunc(Math.random() * 8 + 2);
+        h1.innerHTML = `${number1} × ${number2}`;
+      };
+      //初始化函数
+      const init = function () {
+        btnCorrect.classList.add("hidden");
+        btnWrong.classList.add("hidden");
+        combosText.classList.add("hidden");
+        timerText.classList.add("hidden");
+        btnQuit.classList.add("hidden");
+        modal.classList.add("hidden");
+        btnNext.classList.remove("hidden");
+        btnTest.classList.remove("hidden");
+        clearInterval(timer);
+        misCollector = [];
+        combos = 0;
+        combosText.innerHTML = `Combos : ${combos}`;
+        generator();
+
+        // 移除旧的事件监听器，避免重复绑定
+        if (correctListener) {
+          btnCorrect.removeEventListener("click", correctListener);
+        }
+        if (wrongListener) {
+          btnWrong.removeEventListener("click", wrongListener);
+        }
+        if (reviewListener) {
+          btnReview.removeEventListener("click", reviewListener);
+        }
+        if (reviewWrongListener) {
+          btnWrong.removeEventListener("click", reviewWrongListener);
+        }
+        if (reviewCorrectListener) {
+          btnWrong.removeEventListener("click", reviewCorrectListener);
+        }
+      };
+
+      //初始化
+
+      init();
+
+      //显示复习模式
+      const showReviewMode = function () {
+        //移除事件监听器
+        if (correctListener) {
+          btnCorrect.removeEventListener("click", correctListener);
+        }
+        if (wrongListener) {
+          btnWrong.removeEventListener("click", wrongListener);
+        }
+
+        //恢复 UI
+        combosText.classList.add("hidden");
+        timerText.classList.add("hidden");
+        modal.classList.add("hidden");
+
+        loadNextReviewQuestion();
+      };
+
+      //显示下一个复习问题
+      const loadNextReviewQuestion = function () {
+        if (misCollector.length <= 0) {
+          generator();
+          btnReview.classList.add("hidden");
+          timesUpText.classList.add("hidden");
+          modalCombosText.innerHTML = "Congrats!🎉You've cleared all mistakes!";
+          modal.classList.remove("hidden");
+        }
+        h1.innerHTML = misCollector[0];
+      };
+
+      //Next事件
+      btnNext.addEventListener("click", generator);
+
+      //关闭窗口
+      btnModalClose.addEventListener("click", init);
+
+      // 创建事件监听器
+      correctListener = function () {
+        combos++;
+        combosText.innerHTML = `Combos : ${combos}`;
+        generator();
+      };
+
+      wrongListener = function () {
+        misCollector.push(h1.innerHTML);
+        generator();
+      };
+
+      reviewListener = function () {
+        showReviewMode();
+
+        btnCorrect.addEventListener("click", reviewCorrectListener);
+        btnWrong.addEventListener("click", reviewWrongListener);
+      };
+
+      reviewCorrectListener = function () {
+        misCollector.shift();
+        loadNextReviewQuestion();
+      };
+
+      reviewWrongListener = function () {
+        misCollector.push(misCollector.shift());
+        loadNextReviewQuestion();
+      };
+
+      //Timed test事件
+      btnTest.addEventListener("click", function () {
+        //Quit事件
+        btnQuit.addEventListener("click", init);
+        generator();
+        //计时器功能
+        const startTimer = function () {
+          const tick = function () {
+            const min = String(Math.trunc(time / 60)).padStart(2, 0);
+            const sec = String(time % 60).padStart(2, 0);
+
+            //显示倒计时
+            timerText.innerHTML = `Timer : ${min}:${sec}`;
+
+            //两分钟后弹出窗口
+            if (time === 0) {
+              //显示数据，清除计时器
+              clearInterval(timer);
+              modal.classList.remove("hidden");
+              modalCombosText.innerHTML = `Combos : ${combos}`;
+
+              //btnReview事件
+
+            }
+
+            time--;
+          };
+
+          let time = 5;
+
+          // Call the timer every second
+          tick();
+          timer = setInterval(tick, 1000);
+
+          return timer;
+        };
+
+        //显示 UI
+        startTimer();
+        btnCorrect.classList.remove("hidden");
+        btnWrong.classList.remove("hidden");
+        combosText.classList.remove("hidden");
+        timerText.classList.remove("hidden");
+        btnNext.classList.add("hidden");
+        btnTest.classList.add("hidden");
+        btnQuit.classList.remove("hidden");
+
+        // 为 btnCorrect btnWrong 添加事件监听器
+        btnCorrect.addEventListener("click", correctListener);
+        btnWrong.addEventListener("click", wrongListener);
+      });
+    </script>
+  </body>
+</html>
