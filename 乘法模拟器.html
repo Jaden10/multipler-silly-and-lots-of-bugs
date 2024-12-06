@@ -145,7 +145,8 @@
       const generator = function () {
         const number1 = Math.trunc(Math.random() * 8 + 2);
         const number2 = Math.trunc(Math.random() * 8 + 2);
-        h1.innerHTML = `${number1} × ${number2}`;
+        const result = number1 * number2
+        h1.innerHTML = `${result} / ${number2}`;
       };
       //初始化函数
       const init = function () {
